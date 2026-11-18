@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tally – EMI, BMI, Age Calculator and Web Dev Quiz</title>
+<meta name="description" content="Free EMI, BMI and age calculators, plus a quick web development quiz.">
+<script>try{var t=localStorage.getItem('tally-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#E4EBF1;--text:#17233B;--line:#17233B;--edge:#17233B;--card:#fff;--field:#E4EBF1;--grid:rgba(23,35,59,.07);
+  --tomato:#E8503A;--sky:#7FB8E6;--butter:#F4D35E;--mint:#8FD9A8;--c:var(--tomato)}
+[data-theme=dark]{--bg:#0F1626;--text:#EEF2FA;--line:#C9D4EA;--edge:#C9D4EA;--card:#1A2438;--field:#0F1626;--grid:rgba(201,212,234,.07)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);font:17px Figtree,system-ui,sans-serif;background:var(--bg);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:26px 26px}
+.top,.app{max-width:960px;margin:0 auto;padding:40px 20px 16px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.top h1{font:900 clamp(2.6rem,8vw,4.5rem)/1 Unbounded,sans-serif;margin:0 0 8px;letter-spacing:-.03em}
+.top p{margin:0;max-width:46ch}
+.app{padding-top:16px;padding-bottom:40px}
+button{font:700 1rem Figtree,sans-serif;color:var(--text);background:var(--card);border:3px solid var(--edge);border-radius:999px;padding:10px 22px;cursor:pointer;box-shadow:3px 3px 0 var(--edge);transition:transform .12s,box-shadow .12s}
+button:active{transform:translate(3px,3px);box-shadow:none}
+button:focus-visible,input:focus-visible{outline:4px solid var(--c);outline-offset:3px}
+.tabs{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap}
+.tabs button[aria-selected=true]{color:#17233B;transform:translate(3px,3px);box-shadow:none}
+.tabs [data-c=emi][aria-selected=true]{background:var(--tomato)}.tabs [data-c=bmi][aria-selected=true]{background:var(--sky)}
+.tabs [data-c=age][aria-selected=true]{background:var(--butter)}.tabs [data-c=quiz][aria-selected=true]{background:var(--mint)}
+.panel[data-c=emi]{--c:var(--tomato)}.panel[data-c=bmi]{--c:var(--sky)}.panel[data-c=age]{--c:var(--butter)}.panel[data-c=quiz]{--c:var(--mint)}
+.panel{display:grid;grid-template-columns:1fr 1fr;gap:24px}.panel[hidden]{display:none}
+.card{background:var(--card);border:3px solid var(--edge);border-radius:18px;box-shadow:7px 7px 0 var(--edge);padding:26px}
+.inputs{display:flex;flex-direction:column;gap:26px}
+label{display:flex;flex-direction:column;gap:10px;font-weight:700}
+input[type=number],input[type=date]{font:700 1.3rem Figtree,sans-serif;color:var(--text);padding:10px 12px;border:3px solid var(--line);border-radius:10px;background:var(--field);width:100%;color-scheme:light dark}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:14px;border:3px solid var(--line);border-radius:4px;background:repeating-linear-gradient(90deg,var(--line) 0 2px,transparent 2px 14px),var(--card)}
+input[type=range]::-moz-range-track{height:8px;border:3px solid var(--line);border-radius:4px;background:repeating-linear-gradient(90deg,var(--line) 0 2px,transparent 2px 14px),var(--card)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;margin-top:-9px;border-radius:50%;background:var(--c);border:3px solid var(--line)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--c);border:3px solid var(--line)}
+/* result cards keep dark text on bright colour in both themes */
+.result{background:var(--c);color:#17233B;--line:#17233B;--card:#fff;--text:#17233B}
+.small{margin:0;font-weight:700}
+.big{margin:4px 0 14px;font:900 clamp(2rem,6vw,3.2rem)/1.1 Unbounded,sans-serif;letter-spacing:-.03em;overflow-wrap:anywhere}
+.verdict{display:inline-block;margin:0 0 20px;padding:6px 16px;font-weight:700;background:var(--card);border:3px solid var(--line);border-radius:999px}
+.split{height:22px;border:3px solid var(--line);border-radius:999px;background:var(--line);overflow:hidden;margin-bottom:20px}
+.split span{display:block;height:100%;width:60%;background:#fff;transition:width .3s}
+dl{margin:0;display:grid;gap:10px}
+dl div{display:flex;justify-content:space-between;gap:12px;background:var(--card);border:3px solid var(--line);border-radius:12px;padding:10px 14px}
+dt{font-weight:600}dd{margin:0;font-weight:700;text-align:right}
+.scale{position:relative;height:22px;border:3px solid var(--line);border-radius:999px;background:linear-gradient(90deg,#fff 0 28%,#F4D35E 28% 50%,#E8503A 50% 66%,#17233B 66%)}
+.scale i{position:absolute;top:-10px;left:0;width:8px;height:38px;margin-left:-4px;background:#17233B;border:2px solid #fff;border-radius:4px;transition:left .3s}
+.scale-labels{display:flex;justify-content:space-between;font-size:.85rem;font-weight:600;margin-top:8px}
+.note{font-size:.9rem;margin:16px 0 0}
+/* quiz */
+#q-text{font:700 1.35rem/1.35 Figtree,sans-serif;margin:0 0 20px}
+.opts{display:grid;gap:12px}
+.opts button{text-align:left;border-radius:12px;width:100%}
+.opts button:disabled{cursor:default;opacity:1}
+.opts .right{background:var(--mint);color:#17233B}.opts .wrong{background:var(--tomato);color:#17233B}
+#q-fb{min-height:3.2em;margin:0 0 16px;font-weight:600}
+.result>button{margin-top:4px}
+.foot{text-align:center;padding:0 20px 36px;font-weight:600}
+@media(max-width:720px){.panel{grid-template-columns:1fr}.card{padding:20px}.top{flex-direction:column}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div><h1>Tally</h1><p>Calculators and a quiz. Pick one, move the sliders, read the answer.</p></div>
+  <button id="theme" aria-pressed="false">Dark mode</button>
+</header>
+
+<main class="app">
+  <div class="tabs" role="tablist" aria-label="Tools">
+    <button role="tab" id="t-emi" aria-controls="p-emi" aria-selected="true" data-c="emi">Loan EMI</button>
+    <button role="tab" id="t-bmi" aria-controls="p-bmi" aria-selected="false" data-c="bmi">BMI</button>
+    <button role="tab" id="t-age" aria-controls="p-age" aria-selected="false" data-c="age">Age</button>
+    <button role="tab" id="t-quiz" aria-controls="p-quiz" aria-selected="false" data-c="quiz">Quiz</button>
+  </div>
+
+  <section class="panel" id="p-emi" role="tabpanel" aria-labelledby="t-emi" data-c="emi">
+    <div class="inputs card">
+      <label>Loan amount (₹)<input type="number" id="emi-amt" value="500000" min="1000" step="1000"><input type="range" id="emi-amt-r" min="10000" max="10000000" step="10000" value="500000"></label>
+      <label>Interest rate (% per year)<input type="number" id="emi-rate" value="9" min="0" max="40" step="0.1"><input type="range" id="emi-rate-r" min="1" max="30" step="0.1" value="9"></label>
+      <label>Tenure (years)<input type="number" id="emi-yrs" value="5" min="1" max="40" step="1"><input type="range" id="emi-yrs-r" min="1" max="30" step="1" value="5"></label>
+    </div>
+    <div class="result card">
+      <p class="small">Monthly EMI</p><p class="big" id="emi-out">–</p>
+      <div class="split" aria-hidden="true"><span id="emi-split"></span></div>
+      <dl>
+        <div><dt>Principal</dt><dd id="emi-p">–</dd></div>
+        <div><dt>Total interest</dt><dd id="emi-i">–</dd></div>
+        <div><dt>Total payable</dt><dd id="emi-t">–</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="panel" id="p-bmi" role="tabpanel" aria-labelledby="t-bmi" data-c="bmi" hidden>
+    <div class="inputs card">
+      <label>Height (cm)<input type="number" id="bmi-h" value="170" min="50" max="250"><input type="range" id="bmi-h-r" min="100" max="220" value="170"></label>
+      <label>Weight (kg)<input type="number" id="bmi-w" value="65" min="10" max="300" step="0.1"><input type="range" id="bmi-w-r" min="30" max="180" value="65"></label>
+    </div>
+    <div class="result card">
+      <p class="small">Your BMI</p><p class="big" id="bmi-out">–</p><p class="verdict" id="bmi-cat">–</p>
+      <div class="scale" aria-hidden="true"><i id="bmi-pin"></i></div>
+      <div class="scale-labels"><span>Under</span><span>Healthy</span><span>Over</span><span>Obese</span></div>
+      <p class="note">A general guide only. It does not replace advice from a doctor.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="p-age" role="tabpanel" aria-labelledby="t-age" data-c="age" hidden>
+    <div class="inputs card">
+      <label>Date of birth<input type="date" id="age-dob" value="2000-01-01"></label>
+      <label>Age as on<input type="date" id="age-on"></label>
+    </div>
+    <div class="result card">
+      <p class="small">Your age</p><p class="big" id="age-out">–</p>
+      <dl>
+        <div><dt>Months and days</dt><dd id="age-md">–</dd></div>
+        <div><dt>Total days lived</dt><dd id="age-days">–</dd></div>
+        <div><dt>Next birthday in</dt><dd id="age-next">–</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="panel" id="p-quiz" role="tabpanel" aria-labelledby="t-quiz" data-c="quiz" hidden>
+    <div class="card">
+      <h2 id="q-text"></h2>
+      <div class="opts" id="q-opts"></div>
+    </div>
+    <div class="result card">
+      <p class="small" id="q-count">–</p>
+      <p class="big" id="q-score">0 correct</p>
+      <div class="split" aria-hidden="true"><span id="q-bar" style="width:0"></span></div>
+      <p id="q-fb" aria-live="polite">Pick an answer to see if you are right.</p>
+      <button id="q-next" disabled>Next question</button>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">Built by Nikhil Pandey · NP Web Studio</footer>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const inr = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
+
+  /* Theme */
+  const root = document.documentElement, tbtn = $('theme');
+  function paint() {
+    const dark = root.dataset.theme === 'dark';
+    tbtn.textContent = dark ? 'Light mode' : 'Dark mode';
+    tbtn.setAttribute('aria-pressed', dark);
+  }
+  tbtn.addEventListener('click', () => {
+    root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('tally-theme', root.dataset.theme); } catch (e) {}
+    paint();
+  });
+  paint();
+
+  /* Tabs */
+  const tabs = document.querySelectorAll('[role=tab]');
+  tabs.forEach((tab) => tab.addEventListener('click', () => {
+    tabs.forEach((t) => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', on);
+      $(t.getAttribute('aria-controls')).hidden = !on;
+    });
+  }));
+
+  function link(numId, rangeId, fn) {
+    const n = $(numId), r = $(rangeId);
+    n.addEventListener('input', () => { r.value = n.value; fn(); });
+    r.addEventListener('input', () => { n.value = r.value; fn(); });
+  }
+
+  /* EMI */
+  function emi() {
+    const P = parseFloat($('emi-amt').value), rate = parseFloat($('emi-rate').value), n = parseFloat($('emi-yrs').value) * 12;
+    if (!(P > 0) || !(n > 0) || !(rate >= 0)) { $('emi-out').textContent = 'Check inputs'; return; }
+    const r = rate / 1200;
+    const e = r === 0 ? P / n : (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+    const total = e * n;
+    $('emi-out').textContent = inr(e);
+    $('emi-p').textContent = inr(P);
+    $('emi-i').textContent = inr(total - P);
+    $('emi-t').textContent = inr(total);
+    $('emi-split').style.width = (P / total * 100) + '%';
+  }
+  link('emi-amt', 'emi-amt-r', emi); link('emi-rate', 'emi-rate-r', emi); link('emi-yrs', 'emi-yrs-r', emi);
+
+  /* BMI */
+  function bmi() {
+    const h = parseFloat($('bmi-h').value) / 100, w = parseFloat($('bmi-w').value);
+    if (!(h > 0) || !(w > 0)) { $('bmi-out').textContent = 'Check inputs'; return; }
+    const v = w / (h * h);
+    $('bmi-out').textContent = v.toFixed(1);
+    $('bmi-cat').textContent = v < 18.5 ? 'Underweight' : v < 25 ? 'Healthy weight' : v < 30 ? 'Overweight' : 'Obese';
+    $('bmi-pin').style.left = Math.min(Math.max((v - 10) / 30, 0), 1) * 100 + '%';
+  }
+  link('bmi-h', 'bmi-h-r', bmi); link('bmi-w', 'bmi-w-r', bmi);
+
+  /* Age */
+  const parse = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+  const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  function age() {
+    if (!$('age-dob').value || !$('age-on').value) return;
+    const dob = parse($('age-dob').value), on = parse($('age-on').value);
+    if (dob > on) { $('age-out').textContent = 'Birth date is after the “as on” date'; return; }
+    let y = on.getFullYear() - dob.getFullYear(), m = on.getMonth() - dob.getMonth(), d = on.getDate() - dob.getDate();
+    if (d < 0) { m--; d += new Date(on.getFullYear(), on.getMonth(), 0).getDate(); }
+    if (m < 0) { y--; m += 12; }
+    let next = new Date(on.getFullYear(), dob.getMonth(), dob.getDate());
+    if (next < on) next = new Date(on.getFullYear() + 1, dob.getMonth(), dob.getDate());
+    $('age-out').textContent = y + (y === 1 ? ' year' : ' years');
+    $('age-md').textContent = m + ' months, ' + d + ' days';
+    $('age-days').textContent = Math.round((on - dob) / 864e5).toLocaleString('en-IN');
+    const left = Math.round((next - on) / 864e5);
+    $('age-next').textContent = left === 0 ? 'Today!' : left + ' days';
+  }
+  $('age-on').value = iso(new Date());
+  $('age-dob').addEventListener('input', age);
+  $('age-on').addEventListener('input', age);
+
+  /* Quiz */
+  const Q = [
+    ['Which HTML tag holds everything visible on the page?', ['<head>', '<body>', '<meta>', '<title>'], 1, 'The <body> tag contains all the content people see.'],
+    ['Which CSS property changes the colour of text?', ['font-color', 'text-style', 'color', 'foreground'], 2, 'The color property sets text colour.'],
+    ['Which symbol selects an element by its id in CSS?', ['.', '#', '*', '&'], 1, '#name selects the element with id="name". A dot selects a class.'],
+    ['Which JavaScript keyword declares a value that cannot be reassigned?', ['var', 'let', 'const', 'static'], 2, 'const creates a binding that cannot be reassigned.'],
+    ['What does display: flex do?', ['Hides the element', 'Lays children out in a flexible row or column', 'Adds a shadow', 'Makes text bold'], 1, 'Flexbox arranges child elements along one axis and shares space between them.'],
+    ['Which meta tag helps a site fit phone screens?', ['charset', 'description', 'viewport', 'robots'], 2, 'The viewport meta tag tells mobile browsers how wide the page should be.'],
+    ['Which HTTP status code means “page not found”?', ['200', '301', '500', '404'], 3, '404 means the server cannot find the page. 500 is a server error.'],
+    ['In SQL, what does SELECT do?', ['Deletes rows', 'Reads rows from a table', 'Creates a database', 'Adds a column'], 1, 'SELECT reads data. INSERT adds rows and DELETE removes them.']
+  ];
+  let qi = 0, score = 0, done = false;
+  const next = $('q-next');
+  function showQ() {
+    done = false;
+    const [text, opts] = Q[qi];
+    $('q-text').textContent = text;
+    $('q-count').textContent = 'Question ' + (qi + 1) + ' of ' + Q.length;
+    $('q-fb').textContent = 'Pick an answer to see if you are right.';
+    next.disabled = true;
+    next.textContent = qi === Q.length - 1 ? 'See my score' : 'Next question';
+    const box = $('q-opts'); box.textContent = '';
+    opts.forEach((o, i) => {
+      const b = document.createElement('button');
+      b.textContent = o;
+      b.addEventListener('click', () => answer(i));
+      box.appendChild(b);
+    });
+  }
+  function answer(i) {
+    if (done) return;
+    done = true;
+    const right = Q[qi][2], btns = $('q-opts').children;
+    if (i === right) score++;
+    btns[right].classList.add('right');
+    if (i !== right) btns[i].classList.add('wrong');
+    [...btns].forEach((b) => (b.disabled = true));
+    $('q-fb').textContent = (i === right ? 'Correct. ' : 'Not quite. ') + Q[qi][3];
+    $('q-score').textContent = score + ' correct';
+    $('q-bar').style.width = ((qi + 1) / Q.length * 100) + '%';
+    next.disabled = false;
+  }
+  function finish() {
+    $('q-text').textContent = 'Quiz complete';
+    $('q-opts').textContent = '';
+    $('q-count').textContent = 'Final score';
+    $('q-score').textContent = score + ' / ' + Q.length;
+    $('q-fb').textContent = score >= 7 ? 'Strong work. Your basics are solid.' : score >= 4 ? 'Good start. Review the ones you missed and try again.' : 'Keep practising. Try again after another look at the basics.';
+    next.textContent = 'Restart quiz'; next.disabled = false;
+    qi = Q.length;
+  }
+  next.addEventListener('click', () => {
+    if (qi >= Q.length) { qi = 0; score = 0; $('q-score').textContent = '0 correct'; $('q-bar').style.width = '0'; showQ(); }
+    else if (qi === Q.length - 1) finish();
+    else { qi++; showQ(); }
+  });
+
+  emi(); bmi(); age(); showQ();
+})();
+</script>
+</body>
+</html>
